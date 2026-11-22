@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cisa-kev",
+    "name": "CISA Known Exploited Vulnerabilities (catalogue)",
+    "kind": "api",
+    "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+    "language": "en",
+    "default_reliability": "A",
+    "license_note": "À VÉRIFIER avant activation : conditions de réutilisation. Format JSON (pas RSS) : connecteur dédié à écrire.",
+    "active": false
+  },
+  {
+    "id": "modele-rss-regional",
+    "name": "À renseigner : flux RSS d'un média régional",
+    "kind": "rss",
+    "url": null,
+    "language": "fr",
+    "country_iso3": null,
+    "default_reliability": "C",
+    "license_note": "Renseigner l'URL du flux, vérifier les CGU, puis ajuster la fiabilité (A à F).",
+    "active": false
+  },
+  {
+    "id": "manual",
+    "name": "Saisie manuelle",
+    "kind": "manual",
+    "url": null,
+    "default_reliability": "C",
+    "license_note": "Documents saisis par un analyste.",
+    "active": true
+  }
+]

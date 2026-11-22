@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Nyansa – Réseaux sociaux</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="modulepreload" href="js/social.js">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="logo" aria-hidden="true"></span><strong>Nyansa</strong><span class="muted">Surveillance des réseaux sociaux</span></div>
+    <nav class="nav" aria-label="Navigation"><a href="index.html">Tableau de bord</a><a href="deliverables.html">Livrables</a><a href="social.html" aria-current="page">Réseaux sociaux</a></nav>
+    <div id="demo-banner" class="banner" hidden></div>
+    <div class="filters" title="Identité déclarative : il n'y a pas encore d'authentification. Elle sert à tester les droits par rôle.">
+      <label>Nom <input id="who" type="text" maxlength="80" placeholder="Votre nom" autocomplete="name"></label>
+      <label>Rôle <select id="role"></select></label>
+    </div>
+  </header>
+
+  <main class="dl-grid">
+    <aside class="dl-side">
+      <section class="card">
+        <h2>Nouvelle veille</h2>
+        <form id="w-form" class="dl-form-full" autocomplete="off">
+          <label>Plateforme et type <select id="w-kind">
+            <option value="mastodon:hashtag">Mastodon · hashtag (collecte)</option>
+            <option value="mastodon:account">Mastodon · compte public (collecte)</option>
+            <option value="bluesky:account">Bluesky · compte public (collecte)</option>
+            <option value="youtube:channel">YouTube · chaîne (collecte)</option>
+            <option value="reddit:channel">Reddit · subreddit (collecte)</option>
+            <option value="keyword">Mot-clé (filtre)</option>
+          </select></label>
+          <label><span id="w-value-label">Hashtag</span> <input id="w-value" required maxlength="60" placeholder="Mali"></label>
+          <label id="w-instance-wrap">Instance Mastodon <input id="w-instance" maxlength="100" value="mastodon.social"></label>
+          <label>Nom (facultatif) <input id="w-name" maxlength="80"></label>
+          <label>Pays (facultatif) <select id="w-countries" multiple size="4"></select></label>
+          <fieldset class="chk"><legend>Catégories (aucune = toutes)</legend><div id="w-domains"></div></fieldset>
+          <button type="submit" class="btn go">Ajouter la veille</button>
+          <p class="muted small" id="w-help"></p>
+        </form>
+      </section>
+      <section class="card">
+        <h2>Veilles <span class="muted" id="w-sub"></span></h2>
+        <ul class="dl-list" id="w-list"></ul>
+      </section>
+    </aside>
+
+    <section class="dl-main">
+      <section class="kpis" id="s-kpis" aria-label="Indicateurs"></section>
+      <section class="card">
+        <div class="map-head">
+          <h2>Publications détectées <span class="muted" id="p-sub"></span></h2>
+          <div class="two">
+            <label class="small muted">Statut <select id="f-status"><option value="">Tous</option></select></label>
+            <label class="small muted">Veille <select id="f-watch"><option value="">Toutes</option></select></label>
+          </div>
+        </div>
+        <ul class="sp-list" id="p-list"></ul>
+        <p class="muted small" id="s-limits"></p>
+      </section>
+    </section>
+  </main>
+  <p id="msg" class="dl-msg" role="alert" hidden></p>
+  <script type="module" src="js/social.js"></script>
+</body>
+</html>

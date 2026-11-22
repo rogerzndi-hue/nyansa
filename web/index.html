@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nyansa – Tableau de bord</title>
+  <meta name="description" content="Nyansa : tableau de bord de renseignement sur les risques en Afrique (usage interne).">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://gibs.earthdata.nasa.gov" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="modulepreload" href="js/main.js">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="logo" aria-hidden="true"></span><strong>Nyansa</strong><span class="muted">Renseignement Afrique</span></div>
+    <nav class="nav" aria-label="Navigation"><a href="index.html" aria-current="page">Tableau de bord</a><a href="deliverables.html">Livrables</a><a href="social.html">Réseaux sociaux</a></nav>
+    <div id="demo-banner" class="banner" hidden></div>
+    <div class="filters">
+      <label>Région <select id="f-region"></select></label>
+      <label>Thème <select id="f-domain"></select></label>
+      <label title="Filtre la liste d'événements et les indicateurs ; les scores de la carte restent calculés sur toutes les sources">Sources <select id="f-channel"></select></label>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="kpis" id="kpis" aria-label="Indicateurs"></section>
+
+    <section class="card alerts-card" id="alerts-card" aria-labelledby="alerts-title">
+      <div class="map-head">
+        <h2 id="alerts-title">Alertes <span class="muted" id="al-sub"></span></h2>
+        <label class="small muted"><input type="checkbox" id="al-all"> afficher les alertes acquittées</label>
+      </div>
+      <ul class="al-list" id="al-list"></ul>
+      <p class="muted small" id="al-note"></p>
+      <details class="small" id="al-rules"><summary>Règles d'alerte</summary><ul id="al-rules-list"></ul></details>
+    </section>
+
+    <section class="card map-card">
+      <div class="map-head">
+        <h2>Carte des risques <span class="muted" id="map-sub"></span></h2>
+        <div class="seg" role="group" aria-label="Fond de carte">
+          <button type="button" id="mode-sat" aria-pressed="true">Satellite</button>
+          <button type="button" id="mode-map" aria-pressed="false">Map</button>
+        </div>
+      </div>
+      <div class="map-wrap">
+        <svg id="map" viewBox="0 0 800 820" role="img" aria-label="Carte des 54 pays africains"></svg>
+        <div class="zoomctl" id="zoomctl" role="group" aria-label="Navigation sur la carte">
+          <button type="button" id="zoom-in" aria-label="Agrandir" title="Agrandir">+</button>
+          <button type="button" id="zoom-out" aria-label="Réduire" title="Réduire">−</button>
+          <button type="button" id="zoom-reset" aria-label="Vue d'ensemble" title="Vue d'ensemble">⌂</button>
+        </div>
+        <p class="maphint small" id="maphint">Molette ou +/− pour zoomer, glisser pour se déplacer, double-clic pour agrandir. Cliquez un pays pour le sélectionner ; les villes apparaissent en zoomant.</p>
+      </div>
+      <ul class="legend" id="legend"></ul>
+      <p class="muted small" id="map-note"></p>
+    </section>
+
+    <aside class="card detail" id="detail" aria-live="polite"></aside>
+
+    <section class="card events-card">
+      <h2>Événements récents <span class="muted" id="ev-sub"></span></h2>
+      <div class="table-wrap"><table id="events"></table></div>
+      <div class="more-wrap" id="ev-more-wrap"></div>
+    </section>
+
+    <section class="card ranking">
+      <h2>Classement</h2>
+      <ol id="ranking"></ol>
+    </section>
+  </main>
+  <footer class="card foot" id="sources" aria-label="État des sources"></footer>
+
+  <noscript><p class="card">Nyansa nécessite JavaScript.</p></noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

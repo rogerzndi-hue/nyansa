@@ -1,0 +1,29 @@
+[
+  {
+    "id": "critique-afrique-ouest",
+    "name": "Critique ou élevé en Afrique de l'Ouest (médias)",
+    "min_level": "high",
+    "region": "WEST",
+    "webhook_url": null,
+    "emails": [],
+    "quiet_start": "22:00",
+    "quiet_end": "06:00",
+    "max_external_per_hour": 10
+  },
+  {
+    "id": "coups-etat-sahel",
+    "name": "Sécurité : coups d'État et attaques au Mali, Burkina Faso, Niger",
+    "min_level": "moderate",
+    "countries": ["MLI", "BFA", "NER"],
+    "domains": ["SEC"],
+    "keywords": ["coup d'État", "putsch", "attaque", "attentat"],
+    "include_social": false
+  },
+  {
+    "id": "signaux-faibles-sociaux",
+    "name": "Signaux faibles des réseaux sociaux (NON CONFIRMÉS), application seulement",
+    "min_level": "low",
+    "include_social": true,
+    "domains": ["SEC", "SOC"]
+  }
+]

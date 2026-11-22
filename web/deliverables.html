@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Nyansa – Livrables</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="modulepreload" href="js/deliverables.js">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="logo" aria-hidden="true"></span><strong>Nyansa</strong><span class="muted">Livrables de renseignement</span></div>
+    <nav class="nav" aria-label="Navigation"><a href="index.html">Tableau de bord</a><a href="deliverables.html" aria-current="page">Livrables</a><a href="social.html">Réseaux sociaux</a></nav>
+    <div id="demo-banner" class="banner" hidden></div>
+    <div class="filters" title="Identité déclarative : il n'y a pas encore d'authentification. Elle sert à tester les droits par rôle.">
+      <label>Nom <input id="who" type="text" maxlength="80" placeholder="Votre nom" autocomplete="name"></label>
+      <label>Rôle <select id="role"></select></label>
+    </div>
+  </header>
+
+  <main class="dl-grid">
+    <aside class="dl-side">
+      <section class="card" id="new-card">
+        <h2>Nouveau livrable</h2>
+        <form id="new-form" class="dl-form-full" autocomplete="off">
+          <label>Type de document <select id="n-template" required></select></label>
+          <div class="two">
+            <label>Langue <select id="n-lang"><option value="fr">Français</option><option value="en">English (UK)</option></select></label>
+            <label>Niveau de détail <select id="n-detail"><option value="brief">Synthétique</option><option value="standard" selected>Standard</option><option value="full">Détaillé</option></select></label>
+          </div>
+          <label>Pays <select id="n-countries" multiple size="5" aria-describedby="n-scope"></select></label>
+          <label>Région <select id="n-region"></select></label>
+          <p class="muted small" id="n-scope"></p>
+          <div class="two">
+            <label>Début <input type="date" id="n-start"></label>
+            <label>Fin <input type="date" id="n-end"></label>
+          </div>
+          <fieldset class="chk"><legend>Thèmes (aucun = tous)</legend><div id="n-domains"></div></fieldset>
+          <details><summary>Sections du modèle</summary><div id="n-sections" class="chk"></div></details>
+          <div class="two">
+            <label>Analyste <input id="n-analyst" maxlength="200" required></label>
+            <label>Organisation <input id="n-org" maxlength="200" required></label>
+          </div>
+          <div class="two">
+            <label>Destinataire <input id="n-recipient" maxlength="200"></label>
+            <label>Confidentialité <select id="n-class"><option>PUBLIC</option><option selected>INTERNE</option><option>CONFIDENTIEL</option><option>RESTREINT</option></select></label>
+          </div>
+          <label>Instructions personnalisées <textarea id="n-instr" rows="2" maxlength="2000"></textarea></label>
+          <button type="submit" class="btn go" id="n-go">Générer le brouillon</button>
+          <p class="muted small" id="n-llm">Génération à partir des données collectées, sans IA : chaque fait cite ses sources ; les sections d'analyse sont à rédiger par l'analyste.</p>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Livrables <span class="muted" id="list-sub"></span></h2>
+        <div class="two">
+          <label class="small muted">Statut <select id="l-status"><option value="">Tous</option><option value="draft">Brouillons</option><option value="in_review">En validation</option><option value="validated">Validés</option><option value="archived">Archivés</option></select></label>
+          <label class="small muted">Recherche <input id="l-q" type="search" placeholder="Titre…"></label>
+        </div>
+        <ul class="dl-list" id="list"></ul>
+      </section>
+    </aside>
+
+    <section class="card dl-main" id="editor" aria-live="polite">
+      <p class="muted">Sélectionnez un livrable ou générez-en un.</p>
+    </section>
+  </main>
+  <p id="msg" class="dl-msg" role="alert" hidden></p>
+  <script type="module" src="js/deliverables.js"></script>
+</body>
+</html>

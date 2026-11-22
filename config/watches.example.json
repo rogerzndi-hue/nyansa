@@ -1,0 +1,5 @@
+[
+  {"kind": "hashtag", "value": "Sahel", "instance": "mastodon.social", "name": "#Sahel", "categories": ["SEC", "SOC"]},
+  {"kind": "account", "value": "ministere@piaille.fr", "name": "Compte public d'une institution (exemple à remplacer)"},
+  {"kind": "keyword", "value": "coup d'État", "name": "Mot-clé : coup d'État", "countries": ["MLI", "BFA", "NER"]}
+]
