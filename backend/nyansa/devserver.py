@@ -1,7 +1,7 @@
-"""Serveur de développement local (bibliothèque standard uniquement).
+"""Serveur de dÃ©veloppement local (bibliothÃ¨que standard uniquement).
 
-Sert le front statique (web/) et expose en lecture seule les mêmes données que l'API FastAPI,
-issues du jeu FICTIF de démonstration, ou (--live) de flux RSS réels rafraîchis périodiquement. Écoute uniquement sur 127.0.0.1 : poste local, sans
+Sert le front statique (web/) et expose en lecture seule les mÃªmes donnÃ©es que l'API FastAPI,
+issues du jeu FICTIF de dÃ©monstration, ou (--live) de flux RSS rÃ©els rafraÃ®chis pÃ©riodiquement. Ã‰coute uniquement sur 127.0.0.1 : poste local, sans
 authentification, jamais en production.
 
     cd backend && python3 -m nyansa.devserver [--port 8000] [--live ../config/sources.json] [--interval 15]
@@ -39,10 +39,11 @@ from .runner import SourceReport, refresh
 from .social import (STATUS_LABELS_FR, WATCH_ROLES, WatchBook, WatchError, assert_public_host, load_demo_social, load_seed,
                      social_view, sync_sources)
 from .store import InMemoryStore
+from .runtime import create_runtime
 from .taxonomy import DOMAIN_LABELS_FR, REGION_LABELS_FR, Domain, Region
 
 WEB_ROOT = Path(__file__).resolve().parents[2] / "web"
-CACHE_TTL_S = 30.0  # les scores dépendent de l'heure (décroissance) : on recalcule au plus tard après 30 s
+CACHE_TTL_S = 30.0  # les scores dÃ©pendent de l'heure (dÃ©croissance) : on recalcule au plus tard aprÃ¨s 30 s
 CACHE_MAX = 64
 GZIP_MIN = 1_024
 MAX_BODY = 1_000_000
@@ -67,11 +68,11 @@ def _hostname(header: str) -> str:
 def _json_default(value: object) -> str:
     if isinstance(value, datetime):
         return value.isoformat()
-    raise TypeError(f"Non sérialisable : {type(value)!r}")
+    raise TypeError(f"Non sÃ©rialisable : {type(value)!r}")
 
 
 class LiveState:
-    """Derniers rapports de collecte, partagés entre le thread de collecte et les requêtes."""
+    """Derniers rapports de collecte, partagÃ©s entre le thread de collecte et les requÃªtes."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -98,7 +99,7 @@ def make_handler(
     watches: WatchBook | None = None,
     on_watch_change: Callable[[], None] | None = None,
 ) -> type[BaseHTTPRequestHandler]:
-    """`lock` protège le store (non thread-safe) entre requêtes et thread de collecte."""
+    """`lock` protÃ¨ge le store (non thread-safe) entre requÃªtes et thread de collecte."""
     lock = lock or threading.RLock()
     reports = reports if reports is not None else ReportStore()
     alerts = alerts if alerts is not None else AlertCenter(external=False)
@@ -113,8 +114,8 @@ def make_handler(
             pass
 
         def _send(self, status: int, body: bytes, ctype: str, etag: str | None = None, extra: dict[str, str] | None = None) -> None:
-            """Réponse avec ETag (304 si inchangé) et compression gzip des corps compressibles."""
-            etag = etag or '"' + hashlib.md5(body).hexdigest()[:16] + '"'  # noqa: S324 : somme de contrôle, pas de sécurité
+            """RÃ©ponse avec ETag (304 si inchangÃ©) et compression gzip des corps compressibles."""
+            etag = etag or '"' + hashlib.md5(body).hexdigest()[:16] + '"'  # noqa: S324 : somme de contrÃ´le, pas de sÃ©curitÃ©
             if status == 200 and self.headers.get("If-None-Match") == etag:
                 self.send_response(304)
                 self.send_header("ETag", etag)
@@ -131,7 +132,7 @@ def make_handler(
             self.send_header("X-Content-Type-Options", "nosniff")
             extra = extra or {}
             if "Cache-Control" not in extra:
-                self.send_header("Cache-Control", "no-cache")  # le navigateur revalide (ETag) : rapide, jamais périmé
+                self.send_header("Cache-Control", "no-cache")  # le navigateur revalide (ETag) : rapide, jamais pÃ©rimÃ©
             for k, v in extra.items():
                 self.send_header(k, v)
             self.send_header("Vary", "Accept-Encoding")
@@ -147,7 +148,7 @@ def make_handler(
             self._send(status, body, "application/json; charset=utf-8", extra=extra)
 
         def _cached_json(self, key: str, build) -> None:
-            """Sert une réponse calculée, réutilisée tant que le magasin n'a pas changé (et < 30 s)."""
+            """Sert une rÃ©ponse calculÃ©e, rÃ©utilisÃ©e tant que le magasin n'a pas changÃ© (et < 30 s)."""
             hit = cache.get(key)
             now = time.monotonic()
             if hit and hit[0] == store.version and now - hit[1] < CACHE_TTL_S:
@@ -160,10 +161,10 @@ def make_handler(
             self._send(200, body, "application/json; charset=utf-8", etag)
 
         def _local_host(self) -> bool:
-            """Défense contre le DNS rebinding : seul un nom d'hôte local est accepté."""
+            """DÃ©fense contre le DNS rebinding : seul un nom d'hÃ´te local est acceptÃ©."""
             return _hostname(self.headers.get("Host", "")) in LOCAL_HOSTS
 
-        # --- livrables : écritures (POST, PUT) -------------------------------------------------------------------
+        # --- livrables : Ã©critures (POST, PUT) -------------------------------------------------------------------
         def _write_payload(self) -> dict | None:
             """Valide le cadrage HTTP, consomme le corps born?, puis contr?le les en-t?tes."""
 
@@ -236,12 +237,12 @@ def make_handler(
             return payload
 
         def _identity(self) -> tuple[str, str]:
-            """Identité DÉCLARATIVE (en-têtes X-Dev-User / X-Dev-Role) : poste local sans authentification.
-            Elle sert à tester les droits par rôle ; en production elle viendra d'OIDC."""
+            """IdentitÃ© DÃ‰CLARATIVE (en-tÃªtes X-Dev-User / X-Dev-Role) : poste local sans authentification.
+            Elle sert Ã  tester les droits par rÃ´le ; en production elle viendra d'OIDC."""
             role = (self.headers.get("X-Dev-Role") or "analyst").strip().lower()
             if role not in ROLES:
-                raise Forbidden(f"Rôle inconnu : {role!r}")
-            user = " ".join(unquote(self.headers.get("X-Dev-User") or "").split())[:80] or "analyste"  # envoyé encodé (accents)
+                raise Forbidden(f"RÃ´le inconnu : {role!r}")
+            user = " ".join(unquote(self.headers.get("X-Dev-User") or "").split())[:80] or "analyste"  # envoyÃ© encodÃ© (accents)
             return user, role
 
         def _reports_call(self, method: str, parts: list[str], query: dict[str, list[str]], payload: dict | None) -> None:
@@ -256,7 +257,7 @@ def make_handler(
                         params = parse_params(payload)
                     except ValueError as exc:
                         return self._json({"detail": str(exc)}, 422)
-                    with lock:  # lecture du magasin d'événements
+                    with lock:  # lecture du magasin d'Ã©vÃ©nements
                         built = build_report(store, params, demo=demo)
                     return self._json(reports.create(built, actor, role), 201)
                 if method == "PUT" and len(parts) == 1:
@@ -283,7 +284,7 @@ def make_handler(
             if parts == ["capabilities"]:
                 return self._json({
                     "pdf": importlib.util.find_spec("reportlab") is not None, "docx": True, "html": True,
-                    "llm": False,  # aucun modèle de langage branché : sections d'analyse à rédiger par l'analyste
+                    "llm": False,  # aucun modÃ¨le de langage branchÃ© : sections d'analyse Ã  rÃ©diger par l'analyste
                     "demo": demo, "role": role, "actor": actor, "roles": sorted(ROLES),
                     "persistent": reports.persistent,
                 })
@@ -300,7 +301,7 @@ def make_handler(
                 try:
                     a, b = int(first("a") or ""), int(first("b") or "")
                 except ValueError:
-                    return self._json({"detail": "Paramètres a et b (versions) obligatoires"}, 422)
+                    return self._json({"detail": "ParamÃ¨tres a et b (versions) obligatoires"}, 422)
                 return self._json(reports.diff(rid, a, b, role))
             if sub.startswith("export."):
                 fmt = sub[len("export."):]
@@ -320,11 +321,11 @@ def make_handler(
             return self._json({"detail": "Introuvable"}, 404)
 
         def _watch_write(self, rest: list[str], payload: dict) -> None:
-            """Veilles : création, activation/désactivation, suppression (POST, mêmes protections que les autres écritures)."""
+            """Veilles : crÃ©ation, activation/dÃ©sactivation, suppression (POST, mÃªmes protections que les autres Ã©critures)."""
             try:
                 actor, role = self._identity()
                 if role not in WATCH_ROLES:
-                    raise Forbidden("Gérer les veilles : rôle analyste, responsable de veille ou admin")
+                    raise Forbidden("GÃ©rer les veilles : rÃ´le analyste, responsable de veille ou admin")
                 with lock:
                     if not rest:
                         w = watches.add(payload, actor)
@@ -332,7 +333,7 @@ def make_handler(
                         result, status = w.to_dict(), 201
                     elif len(rest) == 2 and rest[1] == "toggle":
                         if not isinstance(payload.get("active"), bool):
-                            return self._json({"detail": "active (booléen) obligatoire"}, 422)
+                            return self._json({"detail": "active (boolÃ©en) obligatoire"}, 422)
                         result, status = watches.set_active(rest[0], payload["active"]).to_dict(), 200
                         store.audit(actor, "watch.toggle", rest[0])
                     elif len(rest) == 2 and rest[1] == "delete":
@@ -361,7 +362,7 @@ def make_handler(
                 try:
                     actor, role = self._identity()
                     if role not in ROLE_EDIT | ROLE_VALIDATE:
-                        raise Forbidden("Acquitter une alerte : rôle analyste, validateur, responsable ou admin")
+                        raise Forbidden("Acquitter une alerte : rÃ´le analyste, validateur, responsable ou admin")
                     return self._json(alerts.acknowledge(parts[3], actor))
                 except ReportError as exc:
                     return self._json({"detail": str(exc)}, exc.status)
@@ -383,7 +384,7 @@ def make_handler(
             url = urlparse(self.path)
             path, query = url.path, parse_qs(url.query)
             if not self._local_host():
-                return self._json({"detail": "Hôte refusé"}, 403)
+                return self._json({"detail": "HÃ´te refusÃ©"}, 403)
             if path.startswith("/api/deliverables"):
                 return self._reports_call("GET", path.split("/")[3:], query, None)
             if path.startswith("/api/"):
@@ -410,7 +411,7 @@ def make_handler(
                     region = Region(first("region")) if first("region") else None
                     limit = min(max(int(first("limit") or 100), 1), 500)
                 except ValueError:
-                    return self._json({"detail": "Paramètre invalide"}, 422)
+                    return self._json({"detail": "ParamÃ¨tre invalide"}, 422)
                 country = (first("country") or "").upper() or None
                 if country and country not in COUNTRIES_BY_ISO:
                     return self._json({"detail": "Pays inconnu"}, 404)
@@ -429,7 +430,7 @@ def make_handler(
                 })
             if path == "/unrouted":
                 docs, per_source = [], {}
-                for d in reversed(store.unrouted()):  # du plus récent au plus ancien ; 10 par source, 200 au plus
+                for d in reversed(store.unrouted()):  # du plus rÃ©cent au plus ancien ; 10 par source, 200 au plus
                     if per_source.get(d.source_id, 0) < 10 and len(docs) < 200:
                         per_source[d.source_id] = per_source.get(d.source_id, 0) + 1
                         docs.append(d)
@@ -445,7 +446,7 @@ def make_handler(
                 try:
                     limit = min(max(int(first("limit") or 50), 1), 200)
                 except ValueError:
-                    return self._json({"detail": "Paramètre invalide"}, 422)
+                    return self._json({"detail": "ParamÃ¨tre invalide"}, 422)
                 return self._json({"alerts": alerts.list(status, limit), "external": alerts.external})
             if path == "/social":
                 status = first("status")
@@ -454,7 +455,7 @@ def make_handler(
                 try:
                     limit = min(max(int(first("limit") or 100), 1), 300)
                 except ValueError:
-                    return self._json({"detail": "Paramètre invalide"}, 422)
+                    return self._json({"detail": "ParamÃ¨tre invalide"}, 422)
                 return self._json(social_view(store, watches, live.snapshot() if live else None, demo=demo, watch=first("watch"),
                                               status=status, country=(first("country") or "").upper() or None, limit=limit))
             if path == "/alerts/rules":
@@ -473,7 +474,7 @@ def make_handler(
                 ctype += "; charset=utf-8"
             stat = target.stat()
             hit = static_cache.get(target)
-            if not hit or hit[0] != stat.st_mtime or hit[1] != stat.st_size:  # relu seulement si le fichier a changé
+            if not hit or hit[0] != stat.st_mtime or hit[1] != stat.st_size:  # relu seulement si le fichier a changÃ©
                 data = target.read_bytes()
                 hit = (stat.st_mtime, stat.st_size, data, '"' + hashlib.md5(data).hexdigest()[:16] + '"')  # noqa: S324
                 static_cache[target] = hit
@@ -492,7 +493,7 @@ def refresh_once(
     store: InMemoryStore, live: LiveState, lock: threading.RLock, fetcher=fetch, alerts: AlertCenter | None = None,
     archive: DocumentArchive | None = None,
 ) -> list[SourceReport]:
-    """Un cycle de collecte. Le réseau est appelé HORS verrou ; seul le traitement est verrouillé."""
+    """Un cycle de collecte. Le rÃ©seau est appelÃ© HORS verrou ; seul le traitement est verrouillÃ©."""
     fetched: dict[str, bytes | Exception] = {}
     for source in list(store.sources()):
         if source.active and source.kind == "rss" and source.url:
@@ -500,7 +501,7 @@ def refresh_once(
                 if source.id.startswith("watch-"):
                     assert_public_host(source.url)  # l'instance vient de l'interface : jamais d'adresse interne
                 fetched[source.url] = fetcher(source.url)
-            except Exception as exc:  # noqa: BLE001 : isolé par source, consigné dans le rapport
+            except Exception as exc:  # noqa: BLE001 : isolÃ© par source, consignÃ© dans le rapport
                 fetched[source.url] = exc
 
     def cached(url: str) -> bytes:
@@ -514,19 +515,19 @@ def refresh_once(
         if archive is not None:
             try:
                 archive.save(store)
-            except OSError as exc:  # disque plein ou dossier en lecture seule : la collecte continue, l'historique ne sera pas conservé
-                print(f"Archive des documents non enregistrée : {exc}")
+            except OSError as exc:  # disque plein ou dossier en lecture seule : la collecte continue, l'historique ne sera pas conservÃ©
+                print(f"Archive des documents non enregistrÃ©e : {exc}")
         if alerts is not None:
             alerts.collect(store)  # lit le magasin : sous verrou
     live.update(reports)
     if alerts is not None:
-        alerts.deliver_pending()  # envois réseau : hors verrou
+        alerts.deliver_pending()  # envois rÃ©seau : hors verrou
     return reports
 
 
 def refresh_loop(store: InMemoryStore, live: LiveState, lock: threading.RLock, interval_s: float, stop: threading.Event,
                  alerts: AlertCenter | None = None, wake: threading.Event | None = None, archive: DocumentArchive | None = None) -> None:
-    """Collecte périodique ; `wake` déclenche un cycle immédiat (nouvelle veille)."""
+    """Collecte pÃ©riodique ; `wake` dÃ©clenche un cycle immÃ©diat (nouvelle veille)."""
     while not stop.is_set():
         refresh_once(store, live, lock, alerts=alerts, archive=archive)
         if wake is None:
@@ -539,50 +540,49 @@ def refresh_loop(store: InMemoryStore, live: LiveState, lock: threading.RLock, i
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--port", type=int, default=8000)
-    parser.add_argument("--live", metavar="SOURCES_JSON", help="mode réel : flux RSS du fichier, sans données fictives")
-    parser.add_argument("--interval", type=float, default=15.0, help="minutes entre deux collectes (défaut 15)")
-    parser.add_argument("--alert-rules", default="../config/alert_rules.json", help="règles d'alerte (JSON) ; absent : une règle prudente, application seulement")
-    parser.add_argument("--watches", default="../config/watches.json", help="veilles réseaux sociaux initiales (JSON, facultatif) ; mode réel seulement")
-    parser.add_argument("--data-dir", default="data", help="dossier des livrables en mode réel (défaut : ./data) ; mode démo : en mémoire")
+    parser.add_argument("--live", metavar="SOURCES_JSON", help="mode rÃ©el : flux RSS du fichier, sans donnÃ©es fictives")
+    parser.add_argument("--interval", type=float, default=15.0, help="minutes entre deux collectes (dÃ©faut 15)")
+    parser.add_argument("--alert-rules", default="../config/alert_rules.json", help="rÃ¨gles d'alerte (JSON) ; absent : une rÃ¨gle prudente, application seulement")
+    parser.add_argument("--watches", default="../config/watches.json", help="veilles rÃ©seaux sociaux initiales (JSON, facultatif) ; mode rÃ©el seulement")
+    parser.add_argument("--data-dir", default="data", help="dossier des livrables en mode rÃ©el (dÃ©faut : ./data) ; mode dÃ©mo : en mÃ©moire")
     args = parser.parse_args()
 
-    lock, stop, wake = threading.RLock(), threading.Event(), threading.Event()
-    live: LiveState | None = None
-    try:
-        rules = load_rules(args.alert_rules)
-    except RuleError as exc:
-        raise SystemExit(f"Règles d'alerte invalides : {exc}") from exc
-    try:
-        watches = WatchBook(Path(args.data_dir) / "watches.json" if args.live else None)
-        seeds = load_seed(args.watches) if args.live else []
-    except (WatchError, RuntimeError) as exc:
-        raise SystemExit(f"Veilles invalides : {exc}") from exc
-    for seed in seeds:  # veilles du fichier de configuration, sans doublon avec celles déjà enregistrées
-        try:
-            watches.add(seed, actor="configuration")
-        except WatchError:
-            pass
-    alerts = AlertCenter(rules, Path(args.data_dir) / "alerts.json" if args.live else None, external=bool(args.live))
-    if args.live:
-        store, live = InMemoryStore(), LiveState()
-        for source in load_sources(args.live):
-            store.add_source(source)
-        sync_sources(store, watches)  # les veilles hashtag/compte deviennent des sources de collecte
-        archive = DocumentArchive(Path(args.data_dir) / "documents.json")
-        restored = archive.load(store)
-        print(f"Historique : {restored} document(s) rechargé(s) depuis {archive.path} (30 jours au plus)")
+    stop, wake = threading.Event(), threading.Event()
+    runtime = create_runtime(
+        live_sources_path=args.live,
+        data_dir=args.data_dir,
+        alert_rules_path=args.alert_rules,
+        watches_path=args.watches,
+        demo_store_factory=build_store,
+    )
+
+    lock = runtime.lock
+    store = runtime.store
+    rules = runtime.rules
+    watches = runtime.watches
+    alerts = runtime.alerts
+    reports = runtime.reports
+    live: LiveState | None = LiveState() if runtime.live_mode else None
+
+    if runtime.live_mode:
+        archive = runtime.archive
+        if archive is None:
+            raise RuntimeError("Archive absente en mode réel.")
+
+        print(f"Historique : {runtime.restored_documents} document(s) rechargé(s) depuis {archive.path} (30 jours au plus)")
         active = [s for s in store.sources() if s.active and s.kind == "rss"]
-        threading.Thread(target=refresh_loop, args=(store, live, lock, args.interval * 60, stop, alerts, wake, archive), daemon=True).start()
+        threading.Thread(
+            target=refresh_loop,
+            args=(store, live, lock, args.interval * 60, stop, alerts, wake, archive),
+            daemon=True,
+        ).start()
         print(f"Mode réel : {len(active)} source(s) RSS actives, collecte toutes les {args.interval:g} min")
     else:
-        store = build_store()
-        load_demo_social(store, watches)  # veilles et publications FICTIVES : l'interface est visible sans collecte
-        alerts.collect(store)  # alertes sur les données fictives : visibles, sans notification externe
         print("Mode démonstration (données fictives)")
-    reports = ReportStore(Path(args.data_dir) / "reports.json" if live else None)
-    print(f"Veilles réseaux sociaux : {len(watches.list())}" + (" (fictives, démonstration)" if not live else f" ; enregistrées dans {Path(args.data_dir) / 'watches.json'}"))
-    print(f"Alertes : {sum(r.active for r in rules)} règle(s) active(s) ; notifications externes " + ("activées (webhook, e-mail selon les règles)" if live else "désactivées en démonstration"))
-    print("Livrables : " + (f"enregistrés dans {Path(args.data_dir) / 'reports.json'}" if live else "en mémoire (perdus à l'arrêt, mode démo)")
+
+    print(f"Veilles réseaux sociaux : {len(watches.list())}" + (" (fictives, démonstration)" if not runtime.live_mode else f" ; enregistrées dans {Path(args.data_dir) / 'watches.json'}"))
+    print(f"Alertes : {sum(r.active for r in rules)} règle(s) active(s) ; notifications externes " + ("activées (webhook, e-mail selon les règles)" if runtime.live_mode else "désactivées en démonstration"))
+    print("Livrables : " + (f"enregistrés dans {Path(args.data_dir) / 'reports.json'}" if runtime.live_mode else "en mémoire (perdus à l'arrêt, mode démo)")
           + " ; identité déclarative, sans authentification")
     server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(store, demo=live is None, live=live, lock=lock, reports=reports, alerts=alerts, watches=watches, on_watch_change=wake.set))
     print(f"Nyansa : http://127.0.0.1:{args.port}")
