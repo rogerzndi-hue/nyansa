@@ -547,7 +547,6 @@ def main() -> None:
     parser.add_argument("--data-dir", default="data", help="dossier des livrables en mode rÃ©el (dÃ©faut : ./data) ; mode dÃ©mo : en mÃ©moire")
     args = parser.parse_args()
 
-    stop, wake = threading.Event(), threading.Event()
     runtime = create_runtime(
         live_sources_path=args.live,
         data_dir=args.data_dir,
@@ -571,11 +570,19 @@ def main() -> None:
 
         print(f"Historique : {runtime.restored_documents} document(s) rechargé(s) depuis {archive.path} (30 jours au plus)")
         active = [s for s in store.sources() if s.active and s.kind == "rss"]
-        threading.Thread(
+        runtime.start_collector(
             target=refresh_loop,
-            args=(store, live, lock, args.interval * 60, stop, alerts, wake, archive),
-            daemon=True,
-        ).start()
+            args=(
+                store,
+                live,
+                lock,
+                args.interval * 60,
+                runtime.stop_event,
+                alerts,
+                runtime.wake_event,
+                archive,
+            ),
+        )
         print(f"Mode réel : {len(active)} source(s) RSS actives, collecte toutes les {args.interval:g} min")
     else:
         print("Mode démonstration (données fictives)")
@@ -584,13 +591,13 @@ def main() -> None:
     print(f"Alertes : {sum(r.active for r in rules)} règle(s) active(s) ; notifications externes " + ("activées (webhook, e-mail selon les règles)" if runtime.live_mode else "désactivées en démonstration"))
     print("Livrables : " + (f"enregistrés dans {Path(args.data_dir) / 'reports.json'}" if runtime.live_mode else "en mémoire (perdus à l'arrêt, mode démo)")
           + " ; identité déclarative, sans authentification")
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(store, demo=live is None, live=live, lock=lock, reports=reports, alerts=alerts, watches=watches, on_watch_change=wake.set))
+    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(store, demo=live is None, live=live, lock=lock, reports=reports, alerts=alerts, watches=watches, on_watch_change=runtime.wake_collector))
     print(f"Nyansa : http://127.0.0.1:{args.port}")
     try:
         server.serve_forever()
     finally:
-        stop.set()
-        wake.set()
+        server.server_close()
+        runtime.stop_collector()
 
 
 if __name__ == "__main__":

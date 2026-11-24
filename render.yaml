@@ -17,6 +17,8 @@ services:
       sizeGB: 10
 
     envVars:
+      - key: NYANSA_AUTH_MODE
+        value: public
       - key: NYANSA_MODE
         value: live
 

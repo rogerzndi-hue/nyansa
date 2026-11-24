@@ -56,6 +56,25 @@ class ApiTest(unittest.TestCase):
         log = self.client.get("/audit", headers={"X-Dev-Role": "admin"}).json()
         self.assertEqual(log[0]["action"], "ingest.manual")
 
+    def test_public_mode_allows_read_and_manual_ingest_but_not_audit(self):
+        os.environ["NYANSA_AUTH_MODE"] = "public"
+
+        self.assertEqual(self.client.get("/events").status_code, 200)
+        self.assertEqual(self.client.get("/countries").status_code, 200)
+
+        body = {
+            "title": "Incident de securite signale au Burkina Faso",
+            "text": "Burkina Faso."
+        }
+        created = self.client.post("/ingest/manual", json=body)
+        self.assertEqual(created.status_code, 201, created.text)
+
+        self.assertEqual(self.client.get("/audit").status_code, 403)
+        self.assertEqual(
+            self.client.get("/audit", headers={"X-Dev-Role": "admin"}).status_code,
+            403
+        )
+
     def test_validation_and_errors(self):
         self.assertEqual(self.client.post("/ingest/manual", json={"title": "x"}, headers=self.analyst).status_code, 422)
         unknown = {"title": "Attentat à Bamako", "source_id": "inconnue"}

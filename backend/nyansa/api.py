@@ -139,22 +139,36 @@ def create_app(store: InMemoryStore | None = None) -> FastAPI:
     )
 
     def current_role(x_dev_role: Annotated[str | None, Header()] = None) -> str:
-        if os.getenv("NYANSA_AUTH_MODE", "oidc") != "dev":
+        auth_mode = os.getenv("NYANSA_AUTH_MODE", "oidc").strip().lower()
+
+        if auth_mode == "public":
+            return "public"
+
+        if auth_mode != "dev":
             raise HTTPException(
                 status_code=501,
-                detail="Authentification OIDC non configurée",
+                detail="Authentification OIDC non configur?e",
             )
+
         if x_dev_role not in ALL_ROLES:
             raise HTTPException(
                 status_code=401,
-                detail="En-tête X-Dev-Role absent ou invalide",
+                detail="En-t?te X-Dev-Role absent ou invalide",
             )
         return x_dev_role
 
     def require(*roles: str):
         def dependency(role: str = Depends(current_role)) -> str:
+            if role == "public":
+                if roles == ADMIN_ROLES:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Op?ration r?serv?e ? l'administration",
+                    )
+                return role
+
             if role not in roles:
-                raise HTTPException(status_code=403, detail="Rôle insuffisant")
+                raise HTTPException(status_code=403, detail="R?le insuffisant")
             return role
 
         return dependency
