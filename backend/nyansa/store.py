@@ -96,11 +96,13 @@ class InMemoryStore:
         self._by_country: dict[str, list[Event]] = {}
         self._audit: list[AuditEntry] = []
 
+    
     @contextmanager
     def transaction(self):
-        """Restaure l'?tat interne du magasin si une op?ration ?choue."""
+        """Restaure l'état interne du magasin si une opération échoue."""
         with self._lock:
             snapshot = copy.deepcopy((
+                self._sources,
                 self._documents,
                 self._doc_keys,
                 self._doc_by_id,
@@ -114,6 +116,7 @@ class InMemoryStore:
                 yield self
             except BaseException:
                 (
+                    self._sources,
                     self._documents,
                     self._doc_keys,
                     self._doc_by_id,

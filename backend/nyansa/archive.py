@@ -14,7 +14,7 @@ from pathlib import Path
 from .models import RawDocument
 from .persistence import atomic_write_json
 from .pipeline import process_document
-from .store import InMemoryStore
+from .store_protocol import StoreProtocol
 
 RETENTION = timedelta(days=30)
 
@@ -37,7 +37,7 @@ class DocumentArchive:
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
 
-    def save(self, store: InMemoryStore, now: datetime | None = None) -> int:
+    def save(self, store: StoreProtocol, now: datetime | None = None) -> int:
         now = now or datetime.now(timezone.utc)
         limit = now - RETENTION
         rows = [
@@ -49,7 +49,7 @@ class DocumentArchive:
         atomic_write_json(self.path, rows)
         return len(rows)
 
-    def load(self, store: InMemoryStore, now: datetime | None = None) -> int:
+    def load(self, store: StoreProtocol, now: datetime | None = None) -> int:
         """Recharge les documents r?cents ; une archive absente est un cas normal.
 
         Une archive illisible ou de structure incorrecte d?clenche une erreur.

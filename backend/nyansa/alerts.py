@@ -37,7 +37,7 @@ from .ingest import FeedError, _PublicRedirectHandler, _assert_public_url
 from .models import Event
 from .persistence import atomic_write_json
 from .services import safe_url
-from .store import InMemoryStore
+from .store_protocol import StoreProtocol
 from .taxonomy import DOMAIN_LABELS_FR, LEVEL_LABELS_FR, REGION_LABELS_FR, Domain, Region
 from .text import fold
 
@@ -354,7 +354,7 @@ class AlertCenter:
         )
 
     # --- création -------------------------------------------------------------------------------------------------
-    def _make(self, rule: Rule, event: Event, store: InMemoryStore, status: str, reason: str, now: datetime) -> dict:
+    def _make(self, rule: Rule, event: Event, store: StoreProtocol, status: str, reason: str, now: datetime) -> dict:
         c = COUNTRIES_BY_ISO[event.country_iso3]
         sources = []
         for ref in event.refs:
@@ -376,7 +376,7 @@ class AlertCenter:
                           [{**d, "status": "skipped", "error": "mode démonstration : aucune notification externe"} for d in externals]),
         }
 
-    def collect(self, store: InMemoryStore, now: datetime | None = None) -> list[dict]:
+    def collect(self, store: StoreProtocol, now: datetime | None = None) -> list[dict]:
         """Évalue les événements du magasin (à appeler sous le verrou du magasin) ; retourne les nouvelles alertes."""
         now = now or datetime.now(timezone.utc)
         created: list[dict] = []

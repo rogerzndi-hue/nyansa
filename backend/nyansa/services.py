@@ -12,7 +12,7 @@ from .countries import COUNTRIES_BY_ISO, RATED_COUNTRIES
 from .models import Event, RawDocument
 from .pipeline import Outcome, process_document
 from .scoring import CountryRisk, ScoringConfig, compute_country_risk
-from .store import InMemoryStore
+from .store_protocol import StoreProtocol
 from .taxonomy import LEVEL_LABELS_FR
 
 
@@ -24,7 +24,7 @@ def safe_url(url: str | None) -> str | None:
     return url.strip() if parsed.scheme in ("http", "https") and parsed.netloc else None
 
 
-def event_sources(e: Event, store: InMemoryStore | None) -> list[dict]:
+def event_sources(e: Event, store: StoreProtocol | None) -> list[dict]:
     """Références de l'événement avec le lien vers l'article d'origine (si disponible)."""
     out = []
     for ref in e.refs:
@@ -40,7 +40,7 @@ def event_sources(e: Event, store: InMemoryStore | None) -> list[dict]:
     return out
 
 
-def event_to_dict(e: Event, store: InMemoryStore | None = None) -> dict:
+def event_to_dict(e: Event, store: StoreProtocol | None = None) -> dict:
     return {
         "id": e.id,
         "occurred_at": e.occurred_at,
@@ -67,7 +67,7 @@ def event_to_dict(e: Event, store: InMemoryStore | None = None) -> dict:
 
 
 def ingest_manual(
-    store: InMemoryStore,
+    store: StoreProtocol,
     *,
     title: str,
     text: str,
@@ -83,7 +83,7 @@ def ingest_manual(
 
 
 def risk_for_country(
-    store: InMemoryStore, iso3: str, as_of: datetime | None = None, cfg: ScoringConfig | None = None
+    store: StoreProtocol, iso3: str, as_of: datetime | None = None, cfg: ScoringConfig | None = None
 ) -> CountryRisk:
     as_of = as_of or datetime.now(timezone.utc)
     events = store.events(country=iso3)
@@ -92,7 +92,7 @@ def risk_for_country(
 
 
 def risk_map(
-    store: InMemoryStore, as_of: datetime | None = None, cfg: ScoringConfig | None = None
+    store: StoreProtocol, as_of: datetime | None = None, cfg: ScoringConfig | None = None
 ) -> list[CountryRisk]:
     """Score des 54 pays, du plus risqué au moins risqué."""
     as_of = as_of or datetime.now(timezone.utc)
@@ -111,7 +111,7 @@ def risk_to_dict(r: CountryRisk) -> dict:
     return d
 
 
-def coverage_report(store: InMemoryStore, as_of: datetime | None = None, window_days: int = 30) -> dict:
+def coverage_report(store: StoreProtocol, as_of: datetime | None = None, window_days: int = 30) -> dict:
     """Indicateurs de biais de couverture : langues, routage, pays sans données ou à source unique."""
     as_of = as_of or datetime.now(timezone.utc)
     start = as_of - timedelta(days=window_days)

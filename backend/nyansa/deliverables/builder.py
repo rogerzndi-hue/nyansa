@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 from ..countries import COUNTRIES_BY_ISO
 from ..models import Event
 from ..services import coverage_report, risk_map
-from ..store import InMemoryStore
+from ..store_protocol import StoreProtocol
 from ..taxonomy import DOMAIN_LABELS_FR, LEVEL_LABELS_FR, REGION_LABELS_FR, Domain, Region
 from .catalog import CLASSIFICATIONS, DETAIL_LEVELS, LABELS, LANGUAGES, SECTIONS, TEMPLATES
 
@@ -113,7 +113,7 @@ def parse_params(raw: dict) -> BuildParams:
 class _Sources:
     """Numérote les sources (une par document) dans l'ordre de première citation."""
 
-    def __init__(self, store: InMemoryStore, lang: str) -> None:
+    def __init__(self, store: StoreProtocol, lang: str) -> None:
         self.store, self.lang = store, lang
         self.items: list[dict] = []
         self._by_doc: dict[str, int] = {}
@@ -161,7 +161,7 @@ def casualty_figures(titles: list[str]) -> list[int]:
     return sorted(found)
 
 
-def event_status(event: Event, store: InMemoryStore) -> str:
+def event_status(event: Event, store: StoreProtocol) -> str:
     """Confirmé = au moins deux sources médias distinctes ; les réseaux sociaux ne corroborent pas."""
     media = set()
     for ref in event.refs:
@@ -181,7 +181,7 @@ def _block(kind: str, text: str, refs: list[int] | None = None, **extra: object)
     return {"id": _bid(), "kind": kind, "text": text, "refs": refs or [], "auto": True, **extra}
 
 
-def build_report(store: InMemoryStore, params: BuildParams, now: datetime | None = None, demo: bool = False) -> dict:
+def build_report(store: StoreProtocol, params: BuildParams, now: datetime | None = None, demo: bool = False) -> dict:
     now = now or datetime.now(timezone.utc)
     template, lang = TEMPLATES[params.template_id], params.language
     L = LABELS[lang]

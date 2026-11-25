@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 from .ingest import FeedError, fetch, parse_feed_stats
 from .pipeline import process_document
-from .store import InMemoryStore
+from .store_protocol import StoreProtocol
 
 MAX_TEXT = 1_000  # on garde titre, résumé court et lien : jamais l'article complet
 MAX_TEXT_SOCIAL = 400
@@ -55,7 +55,7 @@ class SourceReport:
 
 
 def refresh(
-    store: InMemoryStore, fetcher: Callable[[str], bytes] = fetch, now: datetime | None = None
+    store: StoreProtocol, fetcher: Callable[[str], bytes] = fetch, now: datetime | None = None
 ) -> list[SourceReport]:
     now = now or datetime.now(timezone.utc)
     reports: list[SourceReport] = []

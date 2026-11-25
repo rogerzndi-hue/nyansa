@@ -16,7 +16,7 @@ from .classify import classify
 from .geo import extract_countries
 from .lang import detect_language
 from .models import Event, RawDocument
-from .store import InMemoryStore
+from .store_protocol import StoreProtocol
 from .text import fold, strip_html
 
 SUMMARY_CHARS = 280
@@ -64,64 +64,94 @@ def url_date(url: str | None) -> datetime | None:
         return None
 
 
-def process_document(store: InMemoryStore, doc: RawDocument) -> Outcome:
+
+def process_document(store: StoreProtocol, doc: RawDocument) -> Outcome:
     source = store.get_source(doc.source_id)
     if source is None:
         raise ValueError(f"Source inconnue : {doc.source_id!r}")
 
+    # 1. Normalisation et préparation complète du document.
     doc.title = strip_html(doc.title)
     doc.text = strip_html(doc.text)
     doc.content_hash = content_hash(doc.title, doc.text)
-    if not store.add_document(doc):
-        return Outcome("duplicate", doc.id)
 
     language, _ = detect_language(f"{doc.title}. {doc.text}")
     doc.language = language if language != "und" else (source.language or "und")
 
+    # 2. Classification sans persistance prématurée.
+    candidate = None
     published = doc.published_at or doc.fetched_at
     written = url_date(doc.url)
-    if written is not None and published - written > STALE_AFTER:  # ancien article republié : la date de publication du flux n'est pas celle des faits
+
+    if written is not None and published - written > STALE_AFTER:
         doc.routing_status = "unrouted"
         doc.reject_reason = "stale"
-        return Outcome("unrouted", doc.id, reason="stale")
+        doc.country_iso3 = None
+    else:
+        extraction = extract_countries(doc.title, doc.text)
 
-    extraction = extract_countries(doc.title, doc.text)
-    if extraction.primary is None:
-        doc.routing_status = "unrouted"
-        doc.reject_reason = "ambiguous_country" if extraction.ambiguous else "no_country"
-        return Outcome("unrouted", doc.id, reason=doc.reject_reason)
+        if extraction.primary is None:
+            doc.routing_status = "unrouted"
+            doc.reject_reason = (
+                "ambiguous_country" if extraction.ambiguous else "no_country"
+            )
+            doc.country_iso3 = None
 
-    if extraction.foreign_focus:  # « Bangladesh battles measles » ne devient pas un événement du Nigeria sur une mention isolée
-        doc.routing_status = "unrouted"
-        doc.reject_reason = "foreign_focus"
-        return Outcome("unrouted", doc.id, reason=doc.reject_reason)
+        elif extraction.foreign_focus:
+            doc.routing_status = "unrouted"
+            doc.reject_reason = "foreign_focus"
+            doc.country_iso3 = None
 
-    classification = classify(doc.title, doc.text)
-    if classification is None:
-        doc.routing_status = "unrouted"
-        doc.reject_reason = "no_domain"
-        return Outcome("unrouted", doc.id, reason=doc.reject_reason)
+        else:
+            classification = classify(doc.title, doc.text)
 
-    occurred = doc.published_at or doc.fetched_at
-    now = datetime.now(timezone.utc)
-    if occurred > now:  # date de publication dans le futur : donnée douteuse, on borne
-        occurred = now
+            if classification is None:
+                doc.routing_status = "unrouted"
+                doc.reject_reason = "no_domain"
+                doc.country_iso3 = None
+            else:
+                occurred = published
+                now = datetime.now(timezone.utc)
+                if occurred > now:
+                    occurred = now
 
-    candidate = Event(
-        occurred_at=occurred,
-        country_iso3=extraction.primary,
-        secondary_countries=extraction.secondary(),
-        domain=classification.domain,
-        secondary_domains=classification.secondary_domains,
-        event_type=classification.event_type,
-        impact=classification.impact,
-        title=doc.title,
-        summary=_summary(doc.text, doc.title),
-        language=doc.language,
-        refs=[store.source_ref(doc)],
-        evidence=classification.evidence,
-    )
-    event, created = store.register_event(candidate)
-    doc.routing_status = "routed"
-    doc.country_iso3 = extraction.primary
-    return Outcome("routed", doc.id, event_id=event.id, created=created)
+                doc.routing_status = "routed"
+                doc.reject_reason = None
+                doc.country_iso3 = extraction.primary
+
+                candidate = Event(
+                    occurred_at=occurred,
+                    country_iso3=extraction.primary,
+                    secondary_countries=extraction.secondary(),
+                    domain=classification.domain,
+                    secondary_domains=classification.secondary_domains,
+                    event_type=classification.event_type,
+                    impact=classification.impact,
+                    title=doc.title,
+                    summary=_summary(doc.text, doc.title),
+                    language=doc.language,
+                    refs=[store.source_ref(doc)],
+                    evidence=classification.evidence,
+                )
+
+    # 3. Persistance atomique : document et événement ensemble.
+    with store.transaction():
+        if not store.add_document(doc):
+            return Outcome("duplicate", doc.id)
+
+        if candidate is None:
+            return Outcome(
+                "unrouted",
+                doc.id,
+                reason=doc.reject_reason,
+            )
+
+        event, created = store.register_event(candidate)
+
+        return Outcome(
+            "routed",
+            doc.id,
+            event_id=event.id,
+            created=created,
+        )
+

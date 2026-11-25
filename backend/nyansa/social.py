@@ -34,6 +34,7 @@ from .models import Source
 from .persistence import atomic_write_json
 from .services import safe_url
 from .store import InMemoryStore
+from .store_protocol import StoreProtocol
 from .taxonomy import DOMAIN_LABELS_FR, LEVEL_LABELS_FR, Domain
 from .text import fold
 
@@ -311,7 +312,7 @@ def collapse_repeats(posts: list[dict]) -> list[dict]:
     return [k for k, _ in kept]
 
 
-def social_view(store: InMemoryStore, book: WatchBook, reports: list[dict] | None = None, now: datetime | None = None, *,
+def social_view(store: StoreProtocol, book: WatchBook, reports: list[dict] | None = None, now: datetime | None = None, *,
                 demo: bool = False, watch: str | None = None, status: str | None = None, country: str | None = None,
                 limit: int = 100) -> dict:
     now = now or datetime.now(timezone.utc)
@@ -412,7 +413,7 @@ def social_view(store: InMemoryStore, book: WatchBook, reports: list[dict] | Non
 
 
 # --- intégration : sources de collecte et démonstration ----------------------------------------------------------------
-def sync_sources(store: InMemoryStore, book: WatchBook) -> None:
+def sync_sources(store: StoreProtocol, book: WatchBook) -> None:
     """Aligne les sources du magasin sur les veilles : ajoute ou met à jour celles des veilles hashtag/compte,
     désactive celles dont la veille a été supprimée (l'historique des documents reste consultable)."""
     wanted = {s.id: s for w in book.list() if (s := watch_source(w)) is not None}

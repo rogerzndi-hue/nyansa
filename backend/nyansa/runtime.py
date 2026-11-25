@@ -6,7 +6,7 @@ import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-
+from .store_protocol import StoreProtocol
 from .alerts import AlertCenter, Rule, RuleError, load_rules
 from .archive import DocumentArchive
 from .deliverables.report import ReportStore
@@ -25,7 +25,7 @@ from .store import InMemoryStore
 class NyansaRuntime:
     """Composants initialisés, prêts à être utilisés par un serveur."""
 
-    store: InMemoryStore
+    store: StoreProtocol
     rules: list[Rule]
     watches: WatchBook
     alerts: AlertCenter
